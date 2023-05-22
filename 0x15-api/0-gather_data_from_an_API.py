@@ -1,30 +1,43 @@
 #!/usr/bin/python3
-"""using this REST API, for a given employee ID,
-returns information about his/her TODO list progress
+"""Given an Employee ID, returns information
+about his/her TODO list progress.
 """
-from requests import get
+import requests
 from sys import argv
 
-
 if __name__ == '__main__':
-    userId = argv[1]
-    user = get("https://jsonplaceholder.typicode.com/users/{}"
-               .format(userId))
+    try:
+        emp_id = int(argv[1])
+    except ValueError:
+        exit()
 
-    name = user.json().get('name')
+    api_url = 'https://jsonplaceholder.typicode.com'
+    user_uri = '{api}/users/{id}'.format(api=api_url, id=emp_id)
+    todo_uri = '{user_uri}/todos'.format(user_uri=user_uri)
 
-    todos = get('https://jsonplaceholder.typicode.com/todos')
-    totalTasks = 0
-    completed = 0
+    # User Response
+    res = requests.get(user_uri).json()
 
-    for task in todos.json():
-        if task.get('userId') == int(userId):
-            totalTasks += 1
-            if task.get('completed'):
-                completed += 1
+    # Name of the employee
+    name = res.get('name')
 
-    print('Employee {} is done with tasks({}/{}):'
-          .format(name, completed, totalTasks))
+    # User TODO Response
+    res = requests.get(todo_uri).json()
 
-    print('\n'.join(["\t " + task.get('title') for task in todos.json()
-          if task.get('userId') == int(userId) and task.get('completed')]))
+    # Total number of tasks, the sum of completed and non-completed tasks
+    total = len(res)
+
+    # Number of non-completed tasks
+    non_completed = sum([elem['completed'] is False for elem in res])
+
+    # Number of completed tasks
+    completed = total - non_completed
+
+    # Formatting the expected output
+    str = "Employee {emp_name} is done with tasks({completed}/{total}):"
+    print(str.format(emp_name=name, completed=completed, total=total))
+
+    # Printing completed tasks
+    for elem in res:
+        if elem.get('completed') is True:
+            print('\t', elem.get('title'))
