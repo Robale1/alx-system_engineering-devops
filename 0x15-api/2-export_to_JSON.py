@@ -1,29 +1,42 @@
 #!/usr/bin/python3
-"""Exports data in the JSON format"""
+"""Export data from an API to JSON format.
+"""
+from json import dumps
+import requests
+from sys import argv
 
-if __name__ == "__main__":
+if __name__ == '__main__':
+    # Checks if the argument can be converted to a number
+    try:
+        emp_id = int(argv[1])
+    except ValueError:
+        exit()
 
-    import json
-    import requests
-    import sys
+    # Main formatted names to API uris and filenames
+    api_url = 'https://jsonplaceholder.typicode.com'
+    user_uri = '{api}/users/{id}'.format(api=api_url, id=emp_id)
+    todo_uri = '{user_uri}/todos'.format(user_uri=user_uri)
+    filename = '{emp_id}.json'.format(emp_id=emp_id)
 
-    userId = sys.argv[1]
-    user = requests.get("https://jsonplaceholder.typicode.com/users/{}"
-                        .format(userId))
-    todos = requests.get('https://jsonplaceholder.typicode.com/todos')
-    todos = todos.json()
+    # User Response
+    u_res = requests.get(user_uri).json()
 
-    todoUser = {}
-    taskList = []
+    # User TODO Response
+    t_res = requests.get(todo_uri).json()
 
-    for task in todos:
-        if task.get('userId') == int(userId):
-            taskDict = {"task": task.get('title'),
-                        "completed": task.get('completed'),
-                        "username": user.json().get('username')}
-            taskList.append(taskDict)
-    todoUser[userId] = taskList
+    # A list of all tasks of an user
+    user_tasks = list()
 
-    filename = userId + '.json'
-    with open(filename, mode='w') as f:
-        json.dump(todoUser, f)
+    for elem in t_res:
+        data = {
+            'task': elem.get('title'),
+            'completed': elem.get('completed'),
+            'username': u_res.get('username')
+        }
+
+        user_tasks.append(data)
+
+    # Create the new file for the user to save the information
+    # Filename example: `{user_id}.json`
+    with open(filename, 'w', encoding='utf-8') as jsonfile:
+        jsonfile.write(dumps({emp_id: user_tasks}))
